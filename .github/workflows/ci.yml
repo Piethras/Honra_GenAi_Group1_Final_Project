@@ -1,0 +1,13 @@
+# IMPLEMENT: CI pipeline — runs on every push and pull request
+# Jobs:
+# 1. check-web:
+#    - runs-on: ubuntu-latest
+#    - steps: checkout → setup Node 20 → npm ci (in apps/web) → prisma validate → tsc --noEmit → eslint
+#    See Section 4.4 of the roadmap for the exact CI YAML
+#
+# 2. check-ai-engine:
+#    - runs-on: ubuntu-latest
+#    - steps: checkout → setup Python 3.11 → pip install -r requirements.txt → pytest
+#    - Run pytest on apps/ai-engine/tests/ directory
+#
+# Both jobs must pass before a PR can be merged

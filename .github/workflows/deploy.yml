@@ -1,0 +1,11 @@
+# IMPLEMENT: Auto-deploy pipeline — runs on push to main branch only
+# Jobs:
+# 1. deploy-web:
+#    - Trigger Vercel deployment using the Vercel CLI or Vercel GitHub integration
+#    - Set VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID as GitHub Secrets
+#    - Run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+#
+# 2. deploy-ai-engine:
+#    - Railway auto-deploys from the main branch when connected via GitHub integration
+#    - Alternatively: use the Railway CLI with a RAILWAY_TOKEN secret
+#    - The Dockerfile in apps/ai-engine/ is used for the build

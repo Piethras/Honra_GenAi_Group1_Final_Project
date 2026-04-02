@@ -1,0 +1,18 @@
+# IMPLEMENT: Run `pip freeze > requirements.txt` after installing all packages
+# Core packages to install first (see Section 2.2 of roadmap):
+# fastapi
+# uvicorn
+# openai
+# pandas
+# numpy
+# python-multipart
+# aiofiles
+# httpx
+# openpyxl
+# xlrd
+# scipy
+# scikit-learn
+# supabase
+# python-dotenv
+# pydantic
+# Then run: pip freeze > requirements.txt to lock exact versions
