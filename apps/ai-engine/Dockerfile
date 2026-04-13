@@ -1,8 +1,26 @@
-# IMPLEMENT: Production Dockerfile for Railway deployment
-# Base image: python:3.11-slim
-# Working directory: /app
-# 1. COPY requirements.txt and run pip install --no-cache-dir -r requirements.txt
-# 2. COPY all source files
-# 3. EXPOSE port 8000
-# 4. CMD: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
-# See Section 4.4 of the roadmap for the complete Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

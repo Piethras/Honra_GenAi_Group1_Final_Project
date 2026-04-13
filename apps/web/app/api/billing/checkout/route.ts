@@ -1,8 +1,29 @@
-// IMPLEMENT: POST /api/billing/checkout — Create a Stripe Checkout session
-// - Authenticate user — return 401 if not authenticated
-// - Accept body: { plan: 'PRO' | 'TEAM' }
-// - Look up the user's Stripe customer ID from the Subscription table
-// - Create a Stripe checkout session in subscription mode with the correct price ID
-// - Set success_url to /dashboard?upgraded=1 and cancel_url to /pricing
-// - Include userId in session metadata (needed by webhook handler)
-// - Return { url: session.url } — the frontend redirects the user to this URL
+import { auth } from '@clerk/nextjs/server';
+import { stripe, PLANS } from '@/lib/stripe';
+import { db } from '@/lib/db';
+import { apiError } from '@/types';
+
+export async function POST(req: Request) {
+  const { userId } = auth();
+  if (!userId) return Response.json(apiError('UNAUTHORIZED', 'Not authenticated'), { status: 401 });
+
+  const user = await db.user.findUnique({
+    where: { clerkId: userId },
+    include: { subscription: true },
+  });
+  if (!user) return Response.json(apiError('USER_NOT_FOUND', 'User not found'), { status: 404 });
+
+  const { plan } = await req.json() as { plan: 'PRO' | 'TEAM' };
+  if (!PLANS[plan]) return Response.json(apiError('INVALID_PLAN', 'Invalid plan'), { status: 400 });
+
+  const session = await stripe.checkout.sessions.create({
+    customer: user.subscription?.stripeCustomerId,
+    mode: 'subscription',
+    line_items: [{ price: PLANS[plan].priceId, quantity: 1 }],
+    success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard/settings?upgraded=1`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing`,
+    metadata: { userId: user.id },
+  });
+
+  return Response.json({ url: session.url });
+}

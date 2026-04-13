@@ -1,14 +1,68 @@
-# IMPLEMENT: POST /process — Parse uploaded dataset file and extract schema
-# Request body:
-#   datasetId: str — ID of the Dataset record in the Next.js DB
-#   storagePath: str — Supabase storage path for the file
-#   fileUrl: str — pre-signed URL to download
-#
-# Implementation:
-# 1. Download and parse the file into a Pandas DataFrame
-# 2. Compute schema: for each column extract name, dtype, null count, unique count, sample values
-# 3. Compute row count and column count
-# 4. Call back to the Next.js API (POST /api/datasets/[id]/schema) with the extracted info
-#    — Use the AI_ENGINE_SECRET header for auth
-# 5. This route is fire-and-forget from Next.js — return 200 immediately after starting
-# 6. Run the actual processing asynchronously using FastAPI BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+import httpx
+import os
+
+from services.loader import load_dataframe
+from services.llm import infer_schema
+from services.insights_svc import run_insight_generation
+
+router = APIRouter()
+
+
+class ProcessRequest(BaseModel):
+    datasetId: str
+    storagePath: str
+    fileType: str = "csv"
+    fileUrl: str = ""
+    callbackUrl: str = ""
+
+
+async def do_process(datasetId: str, fileUrl: str, fileType: str, callbackUrl: str):
+    """Background task: parse file, infer schema, generate insights, POST results back to Next.js."""
+    try:
+        df = await load_dataframe(fileUrl, fileType)
+        schema = infer_schema(df)
+        insights = run_insight_generation(df)
+
+        payload = {
+            "datasetId": datasetId,
+            "rowCount": len(df),
+            "columnCount": len(df.columns),
+            "schema": schema,
+            "insights": insights,
+            "status": "READY",
+        }
+    except Exception as e:
+        payload = {
+            "datasetId": datasetId,
+            "status": "ERROR",
+            "error": str(e),
+        }
+
+    if callbackUrl:
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                await client.post(
+                    callbackUrl,
+                    json=payload,
+                    headers={"X-Secret": os.environ.get("AI_ENGINE_SECRET", "")},
+                )
+        except Exception as e:
+            print(f"Callback failed for dataset {datasetId}: {e}")
+
+
+@router.post("/")
+async def process_dataset(req: ProcessRequest, background_tasks: BackgroundTasks):
+    if not req.fileUrl:
+        raise HTTPException(status_code=400, detail="fileUrl is required")
+
+    background_tasks.add_task(
+        do_process,
+        req.datasetId,
+        req.fileUrl,
+        req.fileType,
+        req.callbackUrl,
+    )
+
+    return {"status": "processing", "datasetId": req.datasetId}

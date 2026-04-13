@@ -1,19 +1,56 @@
 # Dependencies
 node_modules/
-.venv/
-venv/
+.pnp
+.pnp.js
 
-# Environment
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment files - NEVER commit these
 .env
 .env.local
+.env.development
 .env.production
+.env.test
+.env*.local
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.production
+apps/ai-engine/.env
+apps/ai-engine/.env.local
+apps/ai-engine/.env.production
 
-# Build
-.next/
-dist/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Prisma - keep migrations structure but not generated files
+prisma/migrations/
+!prisma/migrations/.gitkeep
 
 # Misc
-.DS_Store
-*.log
+*.tsbuildinfo
+.vercel
+.railway

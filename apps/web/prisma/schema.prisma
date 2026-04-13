@@ -1,13 +1,163 @@
-// IMPLEMENT: Full Prisma schema — single source of truth for all DB tables
-// Copy the complete schema from Section 3.1 of the Build Roadmap (pages 8–10):
-//   - User model (linked to Clerk via clerkId)
-//   - Organization model
-//   - OrgMember model (userId + orgId + role)
-//   - Dataset model (fileUrl, schema JSON, status enum)
-//   - Query model (questionText, generatedCode, resultJson, chartConfig, answerText)
-//   - Insight model (title, description, type, confidence, chartConfig)
-//   - Report model (title, exportUrl, format, content JSON)
-//   - Subscription model (Stripe customer + subscription IDs, status, plan)
-// Enums: Plan (FREE/PRO/TEAM/ENTERPRISE), OrgRole (ADMIN/ANALYST/VIEWER),
-//        DataStatus (PROCESSING/READY/ERROR), QueryStatus (PENDING/RUNNING/SUCCESS/ERROR)
-// After editing this file, run: npx prisma migrate dev --name <migration_name>
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────
+model User {
+  id             String    @id @default(cuid())
+  clerkId        String    @unique
+  email          String    @unique
+  name           String?
+  avatarUrl      String?
+  plan           Plan      @default(FREE)
+  queryCount     Int       @default(0)
+  queryResetAt   DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  orgMemberships OrgMember[]
+  datasets       Dataset[]
+  queries        Query[]
+  reports        Report[]
+  subscription   Subscription?
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+// ── Organizations ─────────────────────────────────────────────
+model Organization {
+  id         String    @id @default(cuid())
+  clerkOrgId String    @unique
+  name       String
+  plan       Plan      @default(FREE)
+  createdAt  DateTime  @default(now())
+
+  members  OrgMember[]
+  datasets Dataset[]
+}
+
+model OrgMember {
+  id     String  @id @default(cuid())
+  userId String
+  orgId  String
+  role   OrgRole @default(VIEWER)
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+}
+
+enum OrgRole {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+// ── Datasets ──────────────────────────────────────────────────
+model Dataset {
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  fileUrl       String
+  fileType      String
+  fileSizeKb    Int
+  rowCount      Int?
+  columnCount   Int?
+  schema        Json?
+  status        DataStatus @default(PROCESSING)
+  userId        String
+  orgId         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org      Organization? @relation(fields: [orgId], references: [id])
+  queries  Query[]
+  insights Insight[]
+}
+
+enum DataStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+// ── Queries ───────────────────────────────────────────────────
+model Query {
+  id             String      @id @default(cuid())
+  questionText   String
+  generatedCode  String?
+  resultJson     Json?
+  chartConfig    Json?
+  answerText     String?
+  durationMs     Int?
+  status         QueryStatus @default(PENDING)
+  errorMessage   String?
+  userId         String
+  datasetId      String
+  createdAt      DateTime    @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+}
+
+enum QueryStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  ERROR
+}
+
+// ── Insights ──────────────────────────────────────────────────
+model Insight {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String
+  confidence  String
+  chartConfig Json?
+  datasetId   String
+  createdAt   DateTime @default(now())
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+}
+
+// ── Reports ───────────────────────────────────────────────────
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  exportUrl String?
+  format    String
+  content   Json?
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Subscriptions ─────────────────────────────────────────────
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  stripeCustomerId  String    @unique
+  stripeSubId       String?   @unique
+  status            String
+  plan              Plan      @default(FREE)
+  currentPeriodEnd  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

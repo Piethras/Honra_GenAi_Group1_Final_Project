@@ -1,6 +1,23 @@
-// IMPLEMENT: POST /api/billing/portal — Create a Stripe Customer Portal session
-// - Authenticate user
-// - Look up stripeCustomerId from Subscription table
-// - Create a Stripe billing portal session for the customer
-// - Return { url } — frontend redirects user to manage their subscription
-// - The portal lets users update payment methods, view invoices, and cancel
+import { auth } from '@clerk/nextjs/server';
+import { stripe } from '@/lib/stripe';
+import { db } from '@/lib/db';
+import { redirect } from 'next/navigation';
+
+export async function POST() {
+  const { userId } = auth();
+  if (!userId) redirect('/auth/login');
+
+  const user = await db.user.findUnique({
+    where: { clerkId: userId },
+    include: { subscription: true },
+  });
+
+  if (!user?.subscription?.stripeCustomerId) redirect('/dashboard/settings');
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: user.subscription.stripeCustomerId,
+    return_url: `${process.env.NEXT_PUBLIC_URL}/dashboard/settings`,
+  });
+
+  redirect(session.url);
+}

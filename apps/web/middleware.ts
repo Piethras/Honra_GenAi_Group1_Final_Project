@@ -1,5 +1,20 @@
-// IMPLEMENT: Clerk auth middleware
-// - Import authMiddleware from @clerk/nextjs
-// - Define publicRoutes: ['/', '/login', '/register', '/pricing', '/api/webhooks(.*)']
-// - All other routes are automatically protected
-// - Export config matcher to apply middleware to all routes except static files
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/auth/login(.*)',
+  '/auth/register(.*)',
+  '/pricing',
+  '/api/webhooks/(.*)',
+]);
+
+export default clerkMiddleware(async (auth, request) => {
+  if (!isPublicRoute(request)) {
+    const { protect } = await auth();
+    protect();
+  }
+});
+
+export const config = {
+  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+};

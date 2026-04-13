@@ -1,6 +1,34 @@
-// IMPLEMENT: Stripe client singleton
-// - Initialize Stripe with STRIPE_SECRET_KEY and API version '2024-06-20'
-// - Export the initialized Stripe instance as `stripe`
-// - Export PRICE_IDS constant mapping plan names to Stripe price IDs:
-//   { PRO: 'price_xxx', TEAM: 'price_yyy' }
-// - Export a helper createStripeCustomer(email, name) for new user registration
+import Stripe from 'stripe';
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+  typescript: true,
+});
+
+export const PLANS = {
+  PRO: {
+    name: 'Pro',
+    priceId: process.env.STRIPE_PRO_PRICE_ID!,
+    price: 15,
+    features: [
+      'Unlimited datasets',
+      'Unlimited queries',
+      '50 MB file uploads',
+      'Unlimited report exports',
+      'Priority email support',
+    ],
+  },
+  TEAM: {
+    name: 'Team',
+    priceId: process.env.STRIPE_TEAM_PRICE_ID!,
+    price: 49,
+    features: [
+      'Everything in Pro',
+      'Up to 10 team members',
+      '200 MB file uploads',
+      'Organization workspace',
+      'Role-based access control',
+      'Audit logs (90 days)',
+    ],
+  },
+} as const;
