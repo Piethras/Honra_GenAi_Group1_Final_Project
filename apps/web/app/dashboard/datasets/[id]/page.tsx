@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default async function DatasetDetailPage({ params }: Props) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return null;
 
   const user = await db.user.findUnique({ where: { clerkId: userId } });
@@ -62,7 +62,12 @@ export default async function DatasetDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <DatasetTabs dataset={dataset as any} userId={user.id} userPlan={user.plan} queryCount={user.queryCount} />
+      <DatasetTabs
+        dataset={dataset as any}
+        userId={user.id}
+        userPlan={user.plan}
+        queryCount={user.queryCount}
+      />
     </div>
   );
 }

@@ -5,13 +5,17 @@ import DataPreview from './DataPreview';
 import InsightsPanel from './InsightsPanel';
 import QueryInterface from '../query/QueryInterface';
 import ExportPanel from './ExportPanel';
-
+import CleaningPanel from './CleaningPanel';
+import EDAPanel from './EDAPanel';
+import ModellingPanel from './ModellingPanel';
+import ConclusionsPanel from './ConclusionsPanel';
 interface Props {
   dataset: {
     id: string;
     name: string;
     status: string;
     fileType: string;
+    fileUrl: string;
     rowCount: number | null;
     columnCount: number | null;
     schema: any;
@@ -23,11 +27,14 @@ interface Props {
   queryCount: number;
 }
 
-const TABS = ['Preview', 'Insights', 'Query', 'Export'] as const;
+const TABS = ['Preview', 'Clean', 'EDA', 'Modelling', 'Insights', 'Query', 'Export', 'Conclusions'] as const;
 type Tab = typeof TABS[number];
 
 export default function DatasetTabs({ dataset, userId, userPlan, queryCount }: Props) {
   const [tab, setTab] = useState<Tab>('Preview');
+  const [edaSummary, setEdaSummary] = useState<any>(null);
+const [modelResults, setModelResults] = useState<any>(null);
+const [cleaningSummary, setCleaningSummary] = useState<any>(null);
 
   const isReady = dataset.status === 'READY';
 
@@ -51,11 +58,40 @@ export default function DatasetTabs({ dataset, userId, userPlan, queryCount }: P
                 {dataset.insights.length}
               </span>
             )}
+            {t === 'Clean' && (
+              <span className="ml-1.5 bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full">
+                New
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {tab === 'Preview' && <DataPreview dataset={dataset} />}
+      {tab === 'Clean' && (
+        <CleaningPanel
+          datasetId={dataset.id}
+          fileUrl={dataset.fileUrl}
+          fileType={dataset.fileType}
+          datasetName={dataset.name}
+        />
+      )}
+
+      {tab === 'EDA' && (
+  <EDAPanel 
+    datasetId={dataset.id} 
+    onResult={setEdaSummary}
+  />
+)}
+
+{tab === 'Modelling' && (
+  <ModellingPanel
+    datasetId={dataset.id}
+    schema={dataset.schema || []}
+    onResult={setModelResults}
+  />
+)}
+
       {tab === 'Insights' && <InsightsPanel insights={dataset.insights} datasetId={dataset.id} />}
       {tab === 'Query' && (
         <QueryInterface
@@ -73,6 +109,16 @@ export default function DatasetTabs({ dataset, userId, userPlan, queryCount }: P
           insights={dataset.insights}
         />
       )}
+
+      {tab === 'Conclusions' && (
+  <ConclusionsPanel
+    datasetId={dataset.id}
+    datasetName={dataset.name}
+    edaSummary={edaSummary}
+    modelResults={modelResults}
+    cleaningSummary={cleaningSummary}
+  />
+)}
     </div>
   );
 }

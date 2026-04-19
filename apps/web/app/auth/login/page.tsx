@@ -3,14 +3,11 @@ import { SignIn } from '@clerk/nextjs';
 
 export default function LoginPage() {
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center py-8">
       <SignIn
-        appearance={{
-          elements: {
-            formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
-            card: 'shadow-none border border-gray-200',
-          },
-        }}
+        path="/auth/login"
+        routing="path"
+        signUpUrl="/auth/register"
       />
     </div>
   );

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import query, insights, process, preview
+from routers import query, insights, process, preview, clean, eda, modelling, conclusions
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,7 +41,10 @@ app.include_router(query.router,    prefix="/query",    dependencies=[auth])
 app.include_router(insights.router, prefix="/insights", dependencies=[auth])
 app.include_router(process.router,  prefix="/process",  dependencies=[auth])
 app.include_router(preview.router,  prefix="/preview",  dependencies=[auth])
-
+app.include_router(clean.router,    prefix="/clean",    dependencies=[auth])
+app.include_router(eda.router,      prefix="/eda",      dependencies=[auth])
+app.include_router(modelling.router, prefix="/modelling", dependencies=[auth])
+app.include_router(conclusions.router, prefix="/conclusions", dependencies=[auth])
 @app.get("/health")
 async def health():
     return {"status": "ok"}
