@@ -14,7 +14,7 @@ router = APIRouter()
 class CleanRequest(BaseModel):
     fileUrl: str
     fileType: str = "csv"
-    schema: list[dict]
+    db_schema: list[dict]
     operations: list[dict] = []
 
 
