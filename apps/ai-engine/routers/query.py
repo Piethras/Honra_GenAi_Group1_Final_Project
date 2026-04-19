@@ -14,7 +14,7 @@ router = APIRouter()
 class QueryRequest(BaseModel):
     question: str
     datasetId: str
-    schema: list[dict]
+    db_schema: list[dict]
     fileUrl: str
     fileType: str = "csv"
 
