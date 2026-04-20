@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       data: {
         status: 'SUCCESS',
         generatedCode: result.generatedCode,
-        resultJson: { data: result.data },
+        resultJson: { data: result.data } as any,
         chartConfig: result.chartConfig,
         answerText: result.answer,
         durationMs,
